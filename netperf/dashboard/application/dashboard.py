@@ -75,16 +75,15 @@ def background_thread():
 			continue
 		type = message.get("type",None)
 		data = message.get("data",None)
-		if type is not None and data is not None:
-			if type in {"bandwidth"}:
-				timestamp = data["timestamp"]
-				# discard stale bandwidth reading messages
-				if time.time() - timestamp >= 1:
-					continue
-			socketio.emit(type,data,namespace=SIO_NAMESPACE, broadcast=True)
-		else:
+		if type is None or data is None:
 			# type and/or data is None, skip this message
 			continue
+		if type in {"bandwidth"}:
+			timestamp = data["timestamp"]
+			# discard stale bandwidth reading messages
+			if time.time() - timestamp >= 1:
+				continue
+		socketio.emit(type,data,namespace=SIO_NAMESPACE, broadcast=True)
 
 @socketio.on('connect', namespace=SIO_NAMESPACE)
 def connect():
@@ -97,26 +96,21 @@ def dbQuery(queryType, data = None):
 	NETPERF_SETTINGS = netperf_settings()
 	db = netperf_db(NETPERF_SETTINGS.get_db_filename())
 	queryDate = datetime.date.today()
-	if data is not None:
-		if "queryDateTimestamp" in data:
-			try:
-				queryDate = datetime.date.fromtimestamp(data["queryDateTimestamp"] / 1000.0)
-			except:
-				queryDate = datetime.date.today()
+	if data is not None and "queryDateTimestamp" in data:
+		try:
+			queryDate = datetime.date.fromtimestamp(data["queryDateTimestamp"] / 1000.0)
+		except:
+			queryDate = datetime.date.today()
 	if queryType == 'speedtest':
 		rowData = db.get_speedtest_data(queryDate)
-	else:
-		if queryType == 'isp_outage':
-			rowData = db.get_isp_outage_data(queryDate)
-		else:
-			if queryType == 'iperf3':
-				rowData = db.get_iperf3_data(queryDate)
-			else:
-				if queryType == 'dns':
-					rowData = db.get_dns_data(queryDate)
-				else:
-					if queryType == 'bandwidth_usage':
-						rowData = db.get_bandwidth_data(queryDate)
+	elif queryType == 'isp_outage':
+		rowData = db.get_isp_outage_data(queryDate)
+	elif queryType == 'iperf3':
+		rowData = db.get_iperf3_data(queryDate)
+	elif queryType == 'dns':
+		rowData = db.get_dns_data(queryDate)
+	elif queryType == 'bandwidth_usage':
+		rowData = db.get_bandwidth_data(queryDate)
 	return rowData
 
 @celery.task
@@ -145,11 +139,10 @@ def async_task(request_event = None, data = None, requester_sid = None):
 		db = netperf_db(nps.get_db_filename())
 		if (data is not None) and ("minutes" in data):
 			response_data = db.get_bandwidth_data(minutes=data['minutes'])
+		elif (data is not None) and ("rows" in data):
+			response_data = db.get_bandwidth_data(rows=data["rows"])
 		else:
-			if (data is not None) and ("rows" in data):
-				response_data = db.get_bandwidth_data(rows=data["rows"])
-			else:
-				response_data = db.get_bandwidth_data(datetime.date.today())
+			response_data = db.get_bandwidth_data(datetime.date.today())
 	elif request_event == 'get_bandwidth_usage':
 		response_event = 'bandwidth_usage'
 		response_data = None
@@ -178,10 +171,10 @@ def async_task(request_event = None, data = None, requester_sid = None):
 		response_event = 'report_list'
 		nps = netperf_settings()
 		reportPath = nps.get_report_path()
-		reportFileList = []
-		for file in os.listdir(reportPath):
-			if file.endswith(".pdf"):
-				reportFileList.append(file)
+		reportFileList = [
+			file for file in os.listdir(reportPath) if file.endswith(".pdf")
+		]
+
 		response_data = reportFileList
 
 	sio = SocketIO(message_queue=MQ_URI)

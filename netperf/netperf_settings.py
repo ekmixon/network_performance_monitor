@@ -10,7 +10,7 @@ import json
 import util
 
 APP_PATH="/opt/netperf"
-SETTINGS_FILE="{}/config/netperf.json".format(APP_PATH)
+SETTINGS_FILE = f"{APP_PATH}/config/netperf.json"
 
 def log_level_switcher(log_level_txt):
 	log_levels = {
@@ -20,11 +20,7 @@ def log_level_switcher(log_level_txt):
 		"INFO": logging.INFO,
 		"DEBUG": logging.DEBUG
 	}
-	if log_level_txt in log_levels:
-		log_level = log_levels[log_level_txt]
-	else:
-		log_level = logging.NOTSET
-	return log_level
+	return log_levels.get(log_level_txt, logging.NOTSET)
 
 
 class netperf_settings:
@@ -49,45 +45,40 @@ class netperf_settings:
 			return None
 
 	def get_db_filename(self):
-		if "data_root" in self.settings_json:
-			client_id = util.get_client_id()
-			db_filename = "{}/{}/database/{}.db".format(self.settings_json["data_root"].rstrip("/"),client_id,client_id)
-			return db_filename
-		else:
+		if "data_root" not in self.settings_json:
 			return None
+		client_id = util.get_client_id()
+		return f'{self.settings_json["data_root"].rstrip("/")}/{client_id}/database/{client_id}.db'
 
 	def get_db_path(self):
-		if "data_root" in self.settings_json:
-			client_id = util.get_client_id()
-			db_path = "{}/{}/database".format(self.settings_json["data_root"].rstrip("/"),client_id)
-			return db_path
-		else:
+		if "data_root" not in self.settings_json:
 			return None
+		client_id = util.get_client_id()
+		return f'{self.settings_json["data_root"].rstrip("/")}/{client_id}/database'
 
 	def get_report_path(self):
-		if "data_root" in self.settings_json:
-			client_id = util.get_client_id()
-			report_path = "{}/{}/reports".format(self.settings_json["data_root"].rstrip("/"),client_id)
-			return report_path
-		else:
+		if "data_root" not in self.settings_json:
 			return None
+		client_id = util.get_client_id()
+		return f'{self.settings_json["data_root"].rstrip("/")}/{client_id}/reports'
 
 	def get_db_write_queue_name(self):
-		db_write_queue_name = "/netperf.db"
-		if "db_write_queue" in self.settings_json:
-			db_write_queue_name = str(self.settings_json["db_write_queue"])
-		return db_write_queue_name
+		return (
+			str(self.settings_json["db_write_queue"])
+			if "db_write_queue" in self.settings_json
+			else "/netperf.db"
+		)
 
 	def get_log_filename(self):
-		log_filename = "/mnt/usb_storage/netperf/log/netperf.log"
-		if "data_root" in self.settings_json:
-			log_filename = "{}/log/netperf.log".format(self.settings_json["data_root"].rstrip("/"))
-		return log_filename
+		return (
+			f'{self.settings_json["data_root"].rstrip("/")}/log/netperf.log'
+			if "data_root" in self.settings_json
+			else "/mnt/usb_storage/netperf/log/netperf.log"
+		)
 
 	def get_log_path(self):
 		if "data_root" in self.settings_json:
-			log_path = "{}/log".format(self.settings_json["data_root"].rstrip("/"))
-			return log_path
+			return f'{self.settings_json["data_root"].rstrip("/")}/log'
 		else:
 			return "/mnt/usb_storage/netperf/log"
 
@@ -144,18 +135,18 @@ class netperf_settings:
 		self.save_settings()
 
 	def get_dashboard_enabled(self):
-		if "dashboard" in self.settings_json:
-			dashboard_enabled = self.settings_json["dashboard"].get("enabled", False)
-		else:
-			dashboard_enabled = False
-		return dashboard_enabled
+		return (
+			self.settings_json["dashboard"].get("enabled", False)
+			if "dashboard" in self.settings_json
+			else False
+		)
 
 	def get_dashboard_queue_name(self):
-		if "dashboard" in self.settings_json:
-			queue_name = self.settings_json["dashboard"].get("queue_name", None)
-		else:
-			queue_name = None
-		return queue_name
+		return (
+			self.settings_json["dashboard"].get("queue_name", None)
+			if "dashboard" in self.settings_json
+			else None
+		)
 
 	def set_dashboard_enabled(self,value):
 		self.settings_json["dashboard"]["enabled"] = value
@@ -170,30 +161,27 @@ class netperf_settings:
 		self.save_settings()
 
 	def get_speedtest_client(self):
-		if "speedtest" in self.settings_json:
-			speedtest_client = self.settings_json["speedtest"].get("client", None)
-		else:
-			speedtest_client = None
-		return speedtest_client
+		return (
+			self.settings_json["speedtest"].get("client", None)
+			if "speedtest" in self.settings_json
+			else None
+		)
 
 	def set_speedtest_server_id(self,server_id):
 		if "speedtest" in self.settings_json:
 			speedtest_settings = self.settings_json["speedtest"]
-			if server_id == "None":
-				speedtest_settings["server_id"] = None
-			else:
-				speedtest_settings["server_id"] = server_id
+			speedtest_settings["server_id"] = None if server_id == "None" else server_id
 		self.save_settings()
 
 	def get_speedtest_server_id(self):
-		if "speedtest" in self.settings_json:
-			server_id = self.settings_json["speedtest"].get("server_id", None)
-		else:
-			server_id = None
-		return server_id
+		return (
+			self.settings_json["speedtest"].get("server_id", None)
+			if "speedtest" in self.settings_json
+			else None
+		)
 
 def main():
-	log_levels = set(['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'])
+	log_levels = {'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'}
 	ns = netperf_settings()
 	unixOptions = 'g:s:v'
 	gnuOptions = ['get=', 'set=', 'value=']
@@ -201,7 +189,7 @@ def main():
 		options, remainder = getopt.getopt(sys.argv[1:], unixOptions, gnuOptions)
 	except getopt.error as err:
 		#output error, and return with an error code
-		print(str(err))
+		print(err)
 		sys.exit(2)
 
 	action = ""
@@ -211,34 +199,29 @@ def main():
 		if opt in ('-g', '--get'):
 			action = "get"
 			setting = arg
-		else:
-			if opt in ('-s', '--set'):
-				action = "set"
-				setting = arg
-			else:
-				if opt in ('-v', '--value'):
-					value = arg
+		elif opt in ('-s', '--set'):
+			action = "set"
+			setting = arg
+		elif opt in ('-v', '--value'):
+			value = arg
 
 	if action == "get":
 		if setting == "db_filename":
 			print (ns.get_db_filename())
+		elif setting == "log_filename":
+			print (ns.get_log_filename())
+		elif setting == "data_root":
+			print (ns.get_data_root())
+		elif setting == "report_path":
+			print (ns.get_report_path())
 		else:
-			if setting == "log_filename":
-				print (ns.get_log_filename())
+			if setting == "speedtest_server_id":
+				print (ns.get_speedtest_server_id())
 			else:
-				if setting == "data_root":
-					print (ns.get_data_root())
-				else:
-					if setting == "report_path":
-						print (ns.get_report_path())
-					else:
-						if setting == "speedtest_server_id":
-							print (ns.get_speedtest_server_id())
-						else:
-							if setting == "speedtest_client":
-								print (ns.get_speedtest_client())
+				if setting == "speedtest_client":
+					print (ns.get_speedtest_client())
 
-	if action == "set":
+	elif action == "set":
 		if setting == "data_usage_quota_GB":
 			val_error=False
 			if value == "":
@@ -307,9 +290,10 @@ def main():
 											print ("speedtest_client value must be 'speedtest-cli' or 'ookla'")
 								else:
 									if setting == "speedtest_server_id":
-										if value != "":
-											ns.set_speedtest_server_id(value)
-										else:
+										if value == "":
 											print ("speedtest_server_id setting requires a value")
+
+										else:
+											ns.set_speedtest_server_id(value)
 if __name__ == "__main__":
 	main()

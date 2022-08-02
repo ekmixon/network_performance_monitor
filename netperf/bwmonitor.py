@@ -25,14 +25,14 @@ def bwmonitor(interface):
 	client_id = util.get_client_id()
 
 	MAX_32UINT = (2 ** 32) - 1
-	STATS_PATH="/sys/class/net/{}/statistics".format(interface)
+	STATS_PATH = f"/sys/class/net/{interface}/statistics"
 
 	try:
-		rx_bytes_file = open("{}/rx_bytes".format(STATS_PATH))
+		rx_bytes_file = open(f"{STATS_PATH}/rx_bytes")
 	except:
 		sys.exit(2)
 	try:
-		tx_bytes_file = open("{}/tx_bytes".format(STATS_PATH))
+		tx_bytes_file = open(f"{STATS_PATH}/tx_bytes")
 	except:
 		sys.exit(2)
 
@@ -113,8 +113,8 @@ if __name__ == '__main__':
 				bwmonitor_log.setLevel(logging.ERROR)
 			if loglevel == "critical":
 				bwmonitor_log.setLevel(logging.CRITICAL)
-	bwmonitor_log.debug("Watching interface: {}".format(interface))
-	if interface == None:
+	bwmonitor_log.debug(f"Watching interface: {interface}")
+	if interface is None:
 		print ("Error: an interface is required.")
 		bwmonitor_log.error("An interface is required.")
 		sys.exit(2)

@@ -23,16 +23,15 @@ test_log = logging.getLogger("test_network")
 test_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
 def default_nns(nns):
-	if nns in (None, "root"):
-		return True
-	else:
-		return False
+	return nns in (None, "root")
 
 def pingtest(test_exec_namespace,remote_host,dbq):
-	if not default_nns(test_exec_namespace):
-		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
-	else:
-		cmd_prefix = ""
+	cmd_prefix = (
+		""
+		if default_nns(test_exec_namespace)
+		else f"sudo ip netns exec {test_exec_namespace} "
+	)
+
 	cmd = "{}ping -c 10 {} | tail -1| awk '{{print $4}}'".format(cmd_prefix,remote_host)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	ping_results = ps.communicate()[0]
@@ -66,14 +65,15 @@ def pingtest(test_exec_namespace,remote_host,dbq):
 	return pingtest_results
 
 def test_local_network(test_exec_namespace, remote_host, dbq):
-	test_log.info("Testing interface {}".format(remote_host))
-	if not default_nns(test_exec_namespace):
-		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
-	else:
-		cmd_prefix = ""
+	test_log.info(f"Testing interface {remote_host}")
+	cmd_prefix = (
+		""
+		if default_nns(test_exec_namespace)
+		else f"sudo ip netns exec {test_exec_namespace} "
+	)
 
 	# Perform local network speed / ping tests
-	cmd = "{}iperf3 --connect-timeout 5000 -c {} --json".format(cmd_prefix,remote_host)
+	cmd = f"{cmd_prefix}iperf3 --connect-timeout 5000 -c {remote_host} --json"
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
 	if ps.returncode == 0:
@@ -132,24 +132,27 @@ def test_isp(test_exec_namespace,dbq):
 	speedtest_client = NETPERF_SETTINGS.get_speedtest_client()
 	speedtest_server_id = NETPERF_SETTINGS.get_speedtest_server_id()
 	test_log.info("Testing Internet speed...")
-	if not default_nns(test_exec_namespace):
-		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
-	else:
-		cmd_prefix = ""
+	cmd_prefix = (
+		""
+		if default_nns(test_exec_namespace)
+		else f"sudo ip netns exec {test_exec_namespace} "
+	)
+
 	if speedtest_client == "speedtest-cli":
 		# open source client
 		if speedtest_server_id is not None:
-			speedtest_server_opt = "--server {}".format(speedtest_server_id)
+			speedtest_server_opt = f"--server {speedtest_server_id}"
 		else:
 			speedtest_server_opt = ""
-		cmd = "{}/usr/local/bin/speedtest-cli --json {}".format(cmd_prefix,speedtest_server_opt)
+		cmd = f"{cmd_prefix}/usr/local/bin/speedtest-cli --json {speedtest_server_opt}"
 	else:
 		# Ookla client
 		if speedtest_server_id is not None:
-			speedtest_server_opt = "--server-id={}".format(speedtest_server_id)
+			speedtest_server_opt = f"--server-id={speedtest_server_id}"
 		else:
 			speedtest_server_opt = ""
-		cmd = "{}/usr/bin/speedtest --accept-license --format=json {}".format(cmd_prefix,speedtest_server_opt)
+		cmd = f"{cmd_prefix}/usr/bin/speedtest --accept-license --format=json {speedtest_server_opt}"
+
 	print (cmd)
 	ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 	json_str = ps.communicate()[0]
@@ -195,16 +198,16 @@ def test_isp(test_exec_namespace,dbq):
 		url = "n/a"
 		test_status = False
 	st_data = { "type" : "speedtest", \
-		    "data" : {  "client_id" : client_id, \
-				"timestamp" : time.time(), \
-				"rx_Mbps" : rx_Mbps, \
-				"tx_Mbps" : tx_Mbps, \
-				"rx_bytes" : rx_bytes, \
-				"tx_bytes" : tx_bytes, \
-				"remote_host" : remote_host, \
-				"url" : url, \
-				"ping" : ping}
-                          }
+	"data" : {  "client_id" : client_id, \
+	"timestamp" : time.time(), \
+	"rx_Mbps" : rx_Mbps, \
+	"tx_Mbps" : tx_Mbps, \
+	"rx_bytes" : rx_bytes, \
+	"tx_bytes" : tx_bytes, \
+	"remote_host" : remote_host, \
+	"url" : url, \
+	"ping" : ping}
+	}
 	dbq.write(st_data)
 	if NETPERF_SETTINGS.get_speedtest_enforce_quota() == True:
 		# send data usage info to the database for data usage quota enforcement
@@ -220,10 +223,12 @@ def test_isp(test_exec_namespace,dbq):
 def test_name_resolution(test_exec_namespace,dbq):
 	test_log.info("Testing name resolution...")
 	EXTERNAL_DNS_SERVERS=['8.8.8.8','8.8.4.4','1.1.1.1','9.9.9.9']
-	if not default_nns(test_exec_namespace):
-		cmd_prefix = "sudo ip netns exec {} ".format(test_exec_namespace)
-	else:
-		cmd_prefix = ""
+	cmd_prefix = (
+		""
+		if default_nns(test_exec_namespace)
+		else f"sudo ip netns exec {test_exec_namespace} "
+	)
+
 	internal_dns_ok = False
 	external_dns_ok = False
 	internal_dns_failures = 0
@@ -232,9 +237,9 @@ def test_name_resolution(test_exec_namespace,dbq):
 	external_dns_query_time = 0
 
 	# try resolving names using local DNS
-	cmd = "{}dig www.example.com +noall +stats".format(cmd_prefix)
+	cmd = f"{cmd_prefix}dig www.example.com +noall +stats"
 	for i in range(5):
-		print ("Testing local DNS {}...".format(int(i)))
+		print(f"Testing local DNS {int(i)}...")
 		ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 		cmd_output = str(ps.communicate()[0])
 		if ps.returncode == 0:
@@ -249,9 +254,9 @@ def test_name_resolution(test_exec_namespace,dbq):
 
 	# try resolving names using external DNS
 	for dns_server in EXTERNAL_DNS_SERVERS:
-		cmd = "{}dig @{} www.example.com +noall +stats".format(cmd_prefix,dns_server)
+		cmd = f"{cmd_prefix}dig @{dns_server} www.example.com +noall +stats"
 		for i in range(5):
-			print ("Testing external DNS {} {}...".format(dns_server,int(i)))
+			print(f"Testing external DNS {dns_server} {int(i)}...")
 			ps = Popen(cmd,shell=True,stdout=PIPE,stderr=STDOUT)
 			cmd_output = str(ps.communicate()[0])
 			if ps.returncode == 0:
@@ -280,13 +285,10 @@ def test_name_resolution(test_exec_namespace,dbq):
 		    }
 	dbq.write(dns_data)
 
-	if internal_dns_ok == False or external_dns_ok == False:
-		return False
-	else:
-		return True
+	return internal_dns_ok != False and external_dns_ok != False
 
 def print_usage():
-	print ("usage: {} <local|isp>".format(sys.argv[0]))
+	print(f"usage: {sys.argv[0]} <local|isp>")
 
 def main():
 	if ((len(sys.argv) < 2) or (len(sys.argv) > 2)):
@@ -302,83 +304,76 @@ def main():
 			for i in interfaces:
 				if interfaces[i]["namespace"] != test_exec_namespace:
 					test_local_network(test_exec_namespace, interfaces[i]["alias"],dbq)
-		else:
-			if sys.argv[1] == 'isp':
-				db_filename = NETPERF_SETTINGS.get_db_filename()
-				db = netperf_db(db_filename)
-				enforce_quota = NETPERF_SETTINGS.get_speedtest_enforce_quota()
-				data_usage_quota_GB = NETPERF_SETTINGS.get_data_usage_quota_GB()
-				data_usage_GB = float(db.get_data_usage()["rxtx_bytes"])/float(1e9)
-				test_log.info("data usage GB: {:0.2f}".format(data_usage_GB))
-				if enforce_quota == True:
-					st_data_usage = db.get_speedtest_data_usage(datetime.today())
-					test_count = st_data_usage[0]["test_count"]
-					if test_count > 0:
-						rxtx_GB = float(st_data_usage[0]["rxtx_bytes"])/float(1e9)
-						avg_rxtx_GB = float(rxtx_GB)/float(test_count)
-					else:
-						rxtx_GB = float(0)
-						avg_rxtx_GB = float(0)
-					if (data_usage_GB + avg_rxtx_GB) > data_usage_quota_GB:
-						quota_reached = True
-					else:
-						quota_reached = False
-
-				if not (enforce_quota == True and quota_reached == True):
-					test_ok = test_isp(test_exec_namespace,dbq)
-					if not test_ok:
-						# speedtest failed, test for an Internet outage outage
-						ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
-						(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
-						if min == 0 or max == 0:
-							# log an outage
-							outage_data = {"type": "isp_outage",\
-									"data" : { \
-										"client_id" : client_id, \
-										"timestamp" : timestamp} \
-									}
-							dbq.write(outage_data)
+		elif sys.argv[1] == 'isp':
+			db_filename = NETPERF_SETTINGS.get_db_filename()
+			db = netperf_db(db_filename)
+			enforce_quota = NETPERF_SETTINGS.get_speedtest_enforce_quota()
+			data_usage_quota_GB = NETPERF_SETTINGS.get_data_usage_quota_GB()
+			data_usage_GB = float(db.get_data_usage()["rxtx_bytes"]) / 1000000000.0
+			test_log.info("data usage GB: {:0.2f}".format(data_usage_GB))
+			if enforce_quota == True:
+				st_data_usage = db.get_speedtest_data_usage(datetime.now())
+				test_count = st_data_usage[0]["test_count"]
+				if test_count > 0:
+					rxtx_GB = float(st_data_usage[0]["rxtx_bytes"]) / 1000000000.0
+					avg_rxtx_GB = float(rxtx_GB)/float(test_count)
 				else:
-					test_log.error("Data usage quota has been reached, speedtest was cancelled. Data usage quota: {:0.2f} Data usage since last reset: {:0.2} GB, average data usage per test: {:0.2f} GB".format(data_usage_quota_GB,data_usage_GB,avg_rxtx_GB))
+					rxtx_GB = float(0)
+					avg_rxtx_GB = float(0)
+				quota_reached = data_usage_GB + avg_rxtx_GB > data_usage_quota_GB
+			if enforce_quota == True and quota_reached == True:
+				test_log.error("Data usage quota has been reached, speedtest was cancelled. Data usage quota: {:0.2f} Data usage since last reset: {:0.2} GB, average data usage per test: {:0.2f} GB".format(data_usage_quota_GB,data_usage_GB,avg_rxtx_GB))
 			else:
-				if sys.argv[1] == 'dns':
-					dns_ok = test_name_resolution(test_exec_namespace,dbq)
-					if not dns_ok:
-						# dns lookup failures, test for an Internet outage
-						ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
-						(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
-						if min == 0 or max == 0:
-							# log an outage
-							outage_data = {"type": "isp_outage",\
-									"data" : { \
+				test_ok = test_isp(test_exec_namespace,dbq)
+				if not test_ok:
+					# speedtest failed, test for an Internet outage outage
+					ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
+					(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
+					if min == 0 or max == 0:
+						# log an outage
+						outage_data = {"type": "isp_outage",\
+								"data" : { \
 									"client_id" : client_id, \
 									"timestamp" : timestamp} \
 								}
-							dbq.write(outage_data)
-				else:
-					if sys.argv[1] == 'internet_ping':
-						ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
-						(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
-						message = {     "type" : "ping", \
-								"data" : { 	"client_id" : client_id, \
-										"timestamp" : timestamp, \
-										"remote_host" : remote_host, \
-										"min" : min, \
-										"avg" : avg, \
-										"max" : max, \
-										"mdev" : mdev}}
-						#dbq.write(message)
+						dbq.write(outage_data)
+		elif sys.argv[1] == 'dns':
+			dns_ok = test_name_resolution(test_exec_namespace,dbq)
+			if not dns_ok:
+				# dns lookup failures, test for an Internet outage
+				ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
+				(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
+				if min == 0 or max == 0:
+					# log an outage
+					outage_data = {"type": "isp_outage",\
+							"data" : { \
+							"client_id" : client_id, \
+							"timestamp" : timestamp} \
+						}
+					dbq.write(outage_data)
+		elif sys.argv[1] == 'internet_ping':
+			ping_results = pingtest(test_exec_namespace,"8.8.8.8",dbq)
+			(client_id,timestamp,remote_host,min,avg,max,mdev) = ping_results
+			message = {     "type" : "ping", \
+					"data" : { 	"client_id" : client_id, \
+							"timestamp" : timestamp, \
+							"remote_host" : remote_host, \
+							"min" : min, \
+							"avg" : avg, \
+							"max" : max, \
+							"mdev" : mdev}}
+			#dbq.write(message)
 
-						if min == 0 or max == 0:
-							test_log.info("Internet outage detected.")
-							outage_data = {"type": "isp_outage",\
-									"data" : { \
-										"client_id" : client_id, \
-										"timestamp" : timestamp} \
-									}
-							dbq.write(outage_data)
-					else:
-						print_usage()
-						sys.exit(1)
+			if min == 0 or max == 0:
+				test_log.info("Internet outage detected.")
+				outage_data = {"type": "isp_outage",\
+						"data" : { \
+							"client_id" : client_id, \
+							"timestamp" : timestamp} \
+						}
+				dbq.write(outage_data)
+		else:
+			print_usage()
+			sys.exit(1)
 if __name__ == "__main__" :
         main()

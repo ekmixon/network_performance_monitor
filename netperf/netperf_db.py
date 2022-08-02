@@ -59,13 +59,15 @@ class netperf_db:
 		except Error as e:
 			print(e)
 
-		sql_create_isp_outage_table = """ CREATE TABLE IF NOT EXISTS isp_outages (
+		if self.db_conn is not None:
+			sql_create_isp_outage_table = """ CREATE TABLE IF NOT EXISTS isp_outages (
 										client_id text NOT NULL,
 										epoch_time real NOT NULL,
 										PRIMARY KEY (client_id,epoch_time)
 										); """
 
-		sql_create_speedtest_table = """ CREATE TABLE IF NOT EXISTS speedtest (
+			create_table(self.db_conn, sql_create_isp_outage_table)
+			sql_create_speedtest_table = """ CREATE TABLE IF NOT EXISTS speedtest (
 										client_id text NOT NULL,
 										epoch_time real NOT NULL,
 										rx_Mbps real NOT NULL,
@@ -78,7 +80,8 @@ class netperf_db:
 										PRIMARY KEY (client_id,epoch_time)
 										); """
 
-		sql_create_iperf3_table = """CREATE TABLE IF NOT EXISTS iperf3 (
+			create_table(self.db_conn, sql_create_speedtest_table)
+			sql_create_iperf3_table = """CREATE TABLE IF NOT EXISTS iperf3 (
 										client_id text NOT NULL,
 										epoch_time real NOT NULL,
 										remote_host text NOT NULL,
@@ -88,7 +91,8 @@ class netperf_db:
 										PRIMARY KEY (client_id,epoch_time)
 										);"""
 
-		sql_create_ping_table = """CREATE TABLE IF NOT EXISTS ping (
+			create_table(self.db_conn, sql_create_iperf3_table)
+			sql_create_ping_table = """CREATE TABLE IF NOT EXISTS ping (
 									client_id text NOT NULL,
 									epoch_time real NOT NULL,
 									remote_host text NOT NULL,
@@ -100,7 +104,8 @@ class netperf_db:
 									);"""
 
 
-		sql_create_dns_table = """CREATE TABLE IF NOT EXISTS dns (
+			create_table(self.db_conn, sql_create_ping_table)
+			sql_create_dns_table = """CREATE TABLE IF NOT EXISTS dns (
 									client_id text NOT NULL,
 									epoch_time real NOT NULL,
 									internal_dns_ok integer NOT NULL,
@@ -113,7 +118,8 @@ class netperf_db:
 									);"""
 
 
-		sql_create_bandwidth_table = """CREATE TABLE IF NOT EXISTS bandwidth (
+			create_table(self.db_conn, sql_create_dns_table)
+			sql_create_bandwidth_table = """CREATE TABLE IF NOT EXISTS bandwidth (
 										client_id text NOT NULL,
 										epoch_time real NOT NULL,
 										rx_bytes integer NOT NULL,
@@ -123,20 +129,14 @@ class netperf_db:
 										PRIMARY KEY (client_id,epoch_time)
 										);"""
 
-		sql_create_data_usage_table = """ CREATE TABLE IF NOT EXISTS data_usage (
+			create_table(self.db_conn, sql_create_bandwidth_table)
+			sql_create_data_usage_table = """ CREATE TABLE IF NOT EXISTS data_usage (
 										client_id text NOT NULL,
 										epoch_time real NOT NULL,
 										rxtx_bytes integer NOT NULL,
 										PRIMARY KEY (client_id,epoch_time)
 										); """
 
-		if self.db_conn is not None:
-			create_table(self.db_conn, sql_create_isp_outage_table)
-			create_table(self.db_conn, sql_create_speedtest_table)
-			create_table(self.db_conn, sql_create_iperf3_table)
-			create_table(self.db_conn, sql_create_ping_table)
-			create_table(self.db_conn, sql_create_dns_table)
-			create_table(self.db_conn, sql_create_bandwidth_table)
 			create_table(self.db_conn, sql_create_data_usage_table)
 		else:
 			print("Error! cannot create the database connection.")
@@ -164,12 +164,12 @@ class netperf_db:
 
 	def log_ping(self,data):
 		row_data = (	data["client_id"], \
-				data["timestamp"], \
-				data["remote_host"], \
-				data["min"], \
-				data["avg"], \
-				data["max"], \
-				data["mdev"])
+					data["timestamp"], \
+					data["remote_host"], \
+					data["min"], \
+					data["avg"], \
+					data["max"], \
+					data["mdev"])
 		#print json.dumps(row_data)
 		sql = '''INSERT OR IGNORE INTO ping(client_id,epoch_time,remote_host,min,avg,max,mdev)
 			VALUES(?,?,?,?,?,?,?);'''
@@ -181,11 +181,11 @@ class netperf_db:
 
 	def log_iperf3(self, data):
 		row_data = ( data["client_id"], \
-				data["timestamp"], \
-				data["remote_host"], \
-				data["rx_Mbps"], \
-				data["tx_Mbps"], \
-				data["retransmits"] )
+					data["timestamp"], \
+					data["remote_host"], \
+					data["rx_Mbps"], \
+					data["tx_Mbps"], \
+					data["retransmits"] )
 		sql = '''INSERT OR IGNORE INTO iperf3(client_id,epoch_time,remote_host,rx_Mbps,tx_Mbps,retransmits)
 			VALUES(?,?,?,?,?,?);'''
 		cur = self.db_conn.cursor()
@@ -196,14 +196,14 @@ class netperf_db:
 
 	def log_speedtest(self,data):
 		row_data = ( data["client_id"], \
-				data["timestamp"], \
-				data["rx_Mbps"], \
-				data["tx_Mbps"], \
-				data["rx_bytes"],\
-				data["tx_bytes"],\
-				data["remote_host"], \
-				data["url"], \
-				data["ping"] )
+					data["timestamp"], \
+					data["rx_Mbps"], \
+					data["tx_Mbps"], \
+					data["rx_bytes"],\
+					data["tx_bytes"],\
+					data["remote_host"], \
+					data["url"], \
+					data["ping"] )
 		sql = '''INSERT OR IGNORE INTO speedtest(client_id,epoch_time,rx_Mbps,tx_Mbps,rx_bytes,tx_bytes,remote_host,url,ping)
 			VALUES(?,?,?,?,?,?,?,?,?);'''
 		cur = self.db_conn.cursor()
@@ -214,11 +214,11 @@ class netperf_db:
 
 	def log_bandwidth(self,data):
 		row_data = ( data["client_id"], \
-				 data["timestamp"], \
-				 data["rx_bytes"], \
-				 data["tx_bytes"], \
-				 data["rx_bps"], \
-				 data["tx_bps"])
+					 data["timestamp"], \
+					 data["rx_bytes"], \
+					 data["tx_bytes"], \
+					 data["rx_bps"], \
+					 data["tx_bps"])
 		sql = '''INSERT OR IGNORE INTO bandwidth(client_id,epoch_time,rx_bytes,tx_bytes,rx_bps,tx_bps)
 			VALUES(?,?,?,?,?,?);'''
 		cur = self.db_conn.cursor()
@@ -231,19 +231,15 @@ class netperf_db:
 		db_log.debug("start of log_data_usage")
 		cur = self.db_conn.cursor()
 		cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
-		col_rxtx_bytes=0
 		query_results = cur.fetchall()
-		db_log.debug("length of query results: {}".format(len(query_results)))
-		if len(query_results) > 0:
-			current_rxtx_bytes = int(query_results[0][col_rxtx_bytes])
-		else:
-			current_rxtx_bytes = 0
+		db_log.debug(f"length of query results: {len(query_results)}")
+		current_rxtx_bytes = int(query_results[0][0]) if len(query_results) > 0 else 0
 		new_rxtx_bytes = current_rxtx_bytes + int(data["rxtx_bytes"])
-		db_log.debug("new_rxtx_bytes: {}".format(new_rxtx_bytes))
+		db_log.debug(f"new_rxtx_bytes: {new_rxtx_bytes}")
 		row_data = ( data["client_id"], \
-					data["timestamp"], \
-					new_rxtx_bytes )
-		db_log.debug("row_data: {}".format(row_data))
+						data["timestamp"], \
+						new_rxtx_bytes )
+		db_log.debug(f"row_data: {row_data}")
 		sql = '''INSERT OR IGNORE INTO data_usage(client_id,epoch_time,rxtx_bytes)
 				VALUES(?,?,?);'''
 		cur.execute(sql, row_data)
@@ -263,16 +259,8 @@ class netperf_db:
 		external_dns_failures = dns_results["external_dns_failures"]
 
 		# map booleans to 1 = True, 0 = False
-		if internal_dns_ok:
-			idns_ok = 1
-		else:
-			idns_ok = 0
-
-		if external_dns_ok:
-			edns_ok = 1
-		else:
-			edns_ok = 0
-
+		idns_ok = 1 if internal_dns_ok else 0
+		edns_ok = 1 if external_dns_ok else 0
 		repacked_dns_results = (client_id,
 								timestamp,
 								idns_ok,
@@ -293,18 +281,22 @@ class netperf_db:
 	def get_isp_outages(self, query_date):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT * FROM isp_outages where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+		cur.execute(
+			f"SELECT * FROM isp_outages where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp}"
+		)
+
 		col_time=1
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time]})
+		results = [{"timestamp" : i[col_time]} for i in cur.fetchall()]
 		cur.close()
 		return results
 
 	def get_speedtest_data(self,query_date):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT * FROM speedtest where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+		cur.execute(
+			f"SELECT * FROM speedtest where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp}"
+		)
+
 		col_time=1
 		col_rx_Mbps=2
 		col_tx_Mbps=3
@@ -313,34 +305,36 @@ class netperf_db:
 		col_remote_host=6
 		col_url=7
 		col_ping=8
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time], \
-					"rx_Mbps" : i[col_rx_Mbps], \
-					"tx_Mbps" : i[col_tx_Mbps], \
-					"rx_bytes" : i[col_rx_bytes], \
-					"tx_bytes" : i[col_tx_bytes], \
-					"ping" : i[col_ping], \
-					"remote_host" : i[col_remote_host],\
-					"url" : i[col_url]})
+		results = [
+			{
+				"timestamp": i[col_time],
+				"rx_Mbps": i[col_rx_Mbps],
+				"tx_Mbps": i[col_tx_Mbps],
+				"rx_bytes": i[col_rx_bytes],
+				"tx_bytes": i[col_tx_bytes],
+				"ping": i[col_ping],
+				"remote_host": i[col_remote_host],
+				"url": i[col_url],
+			}
+			for i in cur.fetchall()
+		]
+
 		cur.close()
 		return results
 
 	def get_speedtest_data_usage(self,query_date):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT COUNT(*) AS test_count, SUM(rx_bytes + tx_bytes) AS rxtx_bytes FROM speedtest where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+		cur.execute(
+			f"SELECT COUNT(*) AS test_count, SUM(rx_bytes + tx_bytes) AS rxtx_bytes FROM speedtest where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp}"
+		)
+
 		col_test_count=0
 		col_rxtx_bytes=1
-		results=[]
 		query_results = cur.fetchall()
 		test_count = query_results[0][col_test_count]
-		if test_count == 0:
-			rxtx_bytes = 0
-		else:
-			rxtx_bytes = int(query_results[0][col_rxtx_bytes])
-		results.append({"test_count" : test_count, \
-				"rxtx_bytes" : rxtx_bytes})
+		rxtx_bytes = 0 if test_count == 0 else int(query_results[0][col_rxtx_bytes])
+		results = [{"test_count": test_count, "rxtx_bytes": rxtx_bytes}]
 		cur.close()
 		return results
 
@@ -349,33 +343,35 @@ class netperf_db:
 		db_log.debug("start of get_data_usage")
 		cur = self.db_conn.cursor()
 		cur.execute("SELECT rxtx_bytes FROM data_usage where epoch_time = (select max(epoch_time) from data_usage)")
-		col_rxtx_bytes=0
 		query_results = cur.fetchall()
 		cur.close()
-		db_log.debug("length of query results: {}".format(len(query_results)))
-		if len(query_results) > 0:
-			rxtx_bytes = int(query_results[0][col_rxtx_bytes])
-		else:
-			rxtx_bytes = int(0)
-		results={"rxtx_bytes" : rxtx_bytes}
-		return results
+		db_log.debug(f"length of query results: {len(query_results)}")
+		rxtx_bytes = int(query_results[0][0]) if len(query_results) > 0 else 0
+		return {"rxtx_bytes" : rxtx_bytes}
 
 	def get_iperf3_data(self,query_date):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT * FROM iperf3 where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp))
+		cur.execute(
+			f"SELECT * FROM iperf3 where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp}"
+		)
+
 		col_time=1
 		col_remote_host=2
 		col_rx_Mbps=3
 		col_tx_Mbps=4
 		col_retransmits=5
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time], \
-					"remote_host" : i[col_remote_host], \
-					"rx_Mbps" : i[col_rx_Mbps], \
-					"tx_Mbps" : i[col_tx_Mbps], \
-					"retransmits" : i[col_retransmits]})
+		results = [
+			{
+				"timestamp": i[col_time],
+				"remote_host": i[col_remote_host],
+				"rx_Mbps": i[col_rx_Mbps],
+				"tx_Mbps": i[col_tx_Mbps],
+				"retransmits": i[col_retransmits],
+			}
+			for i in cur.fetchall()
+		]
+
 		cur.close()
 		return results
 
@@ -392,30 +388,41 @@ class netperf_db:
 		col_avg=4
 		col_max=5
 		col_mdev=6
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time], \
-					"min" : i[col_min], \
-					"avg" : i[col_avg], \
-					"max" : i[col_max], \
-					"mdev" : i[col_mdev]})
+		results = [
+			{
+				"timestamp": i[col_time],
+				"min": i[col_min],
+				"avg": i[col_avg],
+				"max": i[col_max],
+				"mdev": i[col_mdev],
+			}
+			for i in cur.fetchall()
+		]
+
 		cur.close()
 		return results
 
 	def get_iperf3_interface_data(self,query_date, interface):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT * FROM iperf3 where epoch_time >= {} and epoch_time <= {} and remote_host LIKE \"{}\"".format(start_timestamp,end_timestamp,interface))
+		cur.execute(
+			f'SELECT * FROM iperf3 where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp} and remote_host LIKE \"{interface}\"'
+		)
+
 		col_time=1
 		col_rx_Mbps=3
 		col_tx_Mbps=4
 		col_retransmits=5
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time], \
-					"rx_Mbps" : i[col_rx_Mbps], \
-					"tx_Mbps" : i[col_tx_Mbps], \
-					"retransmits" : i[col_retransmits]})
+		results = [
+			{
+				"timestamp": i[col_time],
+				"rx_Mbps": i[col_rx_Mbps],
+				"tx_Mbps": i[col_tx_Mbps],
+				"retransmits": i[col_retransmits],
+			}
+			for i in cur.fetchall()
+		]
+
 		cur.close()
 		return results
 
@@ -425,10 +432,11 @@ class netperf_db:
 		start_epoch = float(start_datetime.strftime('%s'))
 		end_epoch = float(end_datetime.strftime('%s'))
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT DISTINCT remote_host FROM iperf3 where epoch_time >= {} and epoch_time <= {}".format(start_epoch,end_epoch))
-		results=[]
-		for i in cur.fetchall():
-			results.append({"remote_host" : i[0]})
+		cur.execute(
+			f"SELECT DISTINCT remote_host FROM iperf3 where epoch_time >= {start_epoch} and epoch_time <= {end_epoch}"
+		)
+
+		results = [{"remote_host" : i[0]} for i in cur.fetchall()]
 		cur.close()
 		return results
 
@@ -438,7 +446,10 @@ class netperf_db:
 		start_epoch = float(start_datetime.strftime('%s'))
 		end_epoch = float(end_datetime.strftime('%s'))
 		cur = self.db_conn.cursor()
-		cur.execute("SELECT * FROM dns where epoch_time >= {} and epoch_time <= {}".format(start_epoch,end_epoch))
+		cur.execute(
+			f"SELECT * FROM dns where epoch_time >= {start_epoch} and epoch_time <= {end_epoch}"
+		)
+
 		col_time=1
 		col_idns_ok=2
 		col_internal_dns_query_time=3
@@ -449,22 +460,15 @@ class netperf_db:
 		results=[]
 		for i in cur.fetchall():
 			# map integer values to booleans
-			if i[col_idns_ok] == 1:
-				internal_dns_ok = True
-			else:
-				internal_dns_ok = False
-			if i[col_edns_ok] == 1:
-				external_dns_ok = True
-			else:
-				external_dns_ok = False
-
+			internal_dns_ok = i[col_idns_ok] == 1
+			external_dns_ok = i[col_edns_ok] == 1
 			results.append({"timestamp" : i[col_time], \
-						"internal_dns_ok" : internal_dns_ok, \
-						"internal_dns_query_time" : i[col_internal_dns_query_time], \
-						"internal_dns_failures" : i[col_internal_dns_failures], \
-						"external_dns_ok" : external_dns_ok, \
-						"external_dns_query_time" : i[col_external_dns_query_time], \
-						"external_dns_failures" : i[col_external_dns_failures]})
+							"internal_dns_ok" : internal_dns_ok, \
+							"internal_dns_query_time" : i[col_internal_dns_query_time], \
+							"internal_dns_failures" : i[col_internal_dns_failures], \
+							"external_dns_ok" : external_dns_ok, \
+							"external_dns_query_time" : i[col_external_dns_query_time], \
+							"external_dns_failures" : i[col_external_dns_failures]})
 		cur.close()
 		return results
 
@@ -479,10 +483,10 @@ class netperf_db:
 		results=None
 		for i in cur.fetchall():
 			results = {"timestamp" : i[col_time], \
-				   "rx_bytes" : i[col_rx_bytes], \
-				   "tx_bytes" : i[col_tx_bytes], \
-				   "rx_bps" : i[col_rx_bps], \
-				   "tx_bps" : i[col_tx_bps]}
+					   "rx_bytes" : i[col_rx_bytes], \
+					   "tx_bytes" : i[col_tx_bytes], \
+					   "rx_bps" : i[col_rx_bps], \
+					   "tx_bps" : i[col_tx_bps]}
 			break
 		cur.close()
 		return results
@@ -493,25 +497,29 @@ class netperf_db:
 		# if rows is supplied as an argument, returns the most recent <rows> rows of data.
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		minutes = int(minutes)
-		if query_date == datetime.date.today():
-			if minutes > 0:
-				start_timestamp = time.time() - 60*minutes
+		if query_date == datetime.date.today() and minutes > 0:
+			start_timestamp = time.time() - 60*minutes
 		cur = self.db_conn.cursor()
 		if rows > 0:
-			query = "SELECT * FROM bandwidth ORDER BY epoch_time DESC LIMIT {};".format(rows)
+			query = f"SELECT * FROM bandwidth ORDER BY epoch_time DESC LIMIT {rows};"
 		else:
-			query = "SELECT * FROM bandwidth where epoch_time >= {} and epoch_time <= {}".format(start_timestamp,end_timestamp)
+			query = f"SELECT * FROM bandwidth where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp}"
+
 		cur.execute(query)
 		col_time=1
 		col_rx_bytes=2
 		col_tx_bytes=3
 		col_rx_bps=4
 		col_tx_bps=5
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time], \
-					"rx_bps" : i[col_rx_bps], \
-					"tx_bps" : i[col_tx_bps]})
+		results = [
+			{
+				"timestamp": i[col_time],
+				"rx_bps": i[col_rx_bps],
+				"tx_bps": i[col_tx_bps],
+			}
+			for i in cur.fetchall()
+		]
+
 		cur.close()
 		return results
 
@@ -519,12 +527,11 @@ class netperf_db:
 	def get_isp_outage_data(self,query_date = datetime.date.today()):
 		(start_timestamp,end_timestamp) = start_end_timestamps(query_date)
 		cur = self.db_conn.cursor()
-		query = "SELECT * FROM isp_outages where epoch_time >= {} and epoch_time <= {};".format(start_timestamp,end_timestamp)
+		query = f"SELECT * FROM isp_outages where epoch_time >= {start_timestamp} and epoch_time <= {end_timestamp};"
+
 		cur.execute(query)
 		col_time=1
-		results=[]
-		for i in cur.fetchall():
-			results.append({"timestamp" : i[col_time]})
+		results = [{"timestamp" : i[col_time]} for i in cur.fetchall()]
 		cur.close()
 		return results
 
@@ -543,9 +550,12 @@ class netperf_db:
 		cur.execute("SELECT NAME FROM sqlite_master where type = 'table'")
 		for t in cur.fetchall():
 			table_name = t[0]
-			cur.execute("SELECT COUNT(*) AS CNTREC FROM pragma_table_info('{}') WHERE name='epoch_time'".format(table_name))
+			cur.execute(
+				f"SELECT COUNT(*) AS CNTREC FROM pragma_table_info('{table_name}') WHERE name='epoch_time'"
+			)
+
 			if cur.fetchall()[0] != 0:
-				cur.execute("DELETE FROM {} WHERE epoch_time < {}".format(table_name, end_timestamp))
+				cur.execute(f"DELETE FROM {table_name} WHERE epoch_time < {end_timestamp}")
 		# compact the database file
 		cur.execute("PRAGMA wal_checkpoint(TRUNCATE)")
 		cur.execute("VACUUM")
@@ -586,7 +596,7 @@ class db_queue():
 			json_data = json.loads(message)
 		except:
 			json_data = None
-			db_log.error("received invalid message: {}".format(str(message)))
+			db_log.error(f"received invalid message: {str(message)}")
 		return ( json_data, priority )
 
 class dashboard_queue():
@@ -597,7 +607,6 @@ class dashboard_queue():
 			self.queue = posix_ipc.MessageQueue(str(queue_name), posix_ipc.O_CREAT|posix_ipc.O_NONBLOCK)
 		except:
 			db_log.error("unable to open/create the dashboard message queue")
-			pass
 	def write(self,json_object):
 		self.queue.send(json.dumps(json_object))
 
@@ -607,7 +616,7 @@ class dashboard_queue():
 			json_data = json.loads(message)
 		except:
 			json_data = None
-			db_log.error("received invalid message: {}".format(str(message)))
+			db_log.error(f"received invalid message: {str(message)}")
 		return ( json_data, priority )
 
 if __name__ == '__main__':
@@ -624,7 +633,7 @@ if __name__ == '__main__':
 	sigterm_h = util.sigterm_handler()
 
 	def invalid(data):
-		db_log.error("Invalid message type: {}".format(data.get("type",None)))
+		db_log.error(f'Invalid message type: {data.get("type", None)}')
 
 	def function_map(type):
 		switcher = {

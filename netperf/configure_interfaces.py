@@ -25,7 +25,7 @@ IF_INFO_PATH="/sys/class/net"
 
 # JSON file containing interface configuration info
 CONFIG_PATH="/opt/netperf/config"
-INTERFACES_FILE=CONFIG_PATH + "/interfaces.json"
+INTERFACES_FILE = f"{CONFIG_PATH}/interfaces.json"
 RUN_PATH="/run/netperf"
 FORCE_CONFIGURE = False
 DISABLE_CONFIGURE = False
@@ -37,11 +37,10 @@ configure_log.setLevel(NETPERF_SETTINGS.get_log_level())
 
 if len(sys.argv) > 1:
 	arg = str(sys.argv[1])
-	if (arg == "-f") or (arg == "--force"):
+	if arg in {"-f", "--force"}:
 		FORCE_CONFIGURE = True
-	else:
-		if (arg == "-n") or (arg == "--no-config"):
-			DISABLE_CONFIGURE = True
+	elif arg in {"-n", "--no-config"}:
+		DISABLE_CONFIGURE = True
 
 def critical_error (error_str):
 	print(bcolors.FAIL + "\nERROR: " + error_str + "\n" + bcolors.ENDC)

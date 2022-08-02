@@ -24,12 +24,12 @@ from time_bins import time_bins
 
 NETPERF_SETTINGS = netperf_settings()
 CLIENT_ID = util.get_client_id()
-DATA_ROOT="{}/{}".format(NETPERF_SETTINGS.get_data_root(),CLIENT_ID)
+DATA_ROOT = f"{NETPERF_SETTINGS.get_data_root()}/{CLIENT_ID}"
 NETPERF_DB=NETPERF_SETTINGS.get_db_filename()
 REPORT_TEMPLATE_PATH="/opt/netperf/templates"
 REPORT_TEMPLATE_FILENAME="netperf_report_template.tex"
-REPORTS_PATH="{}/reports".format(DATA_ROOT)
-TMP_PATH="{}/tmp".format(REPORTS_PATH)
+REPORTS_PATH = f"{DATA_ROOT}/reports"
+TMP_PATH = f"{REPORTS_PATH}/tmp"
 
 if not os.path.isdir(REPORTS_PATH):
 	os.makedirs(REPORTS_PATH)

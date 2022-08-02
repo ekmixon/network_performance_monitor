@@ -10,10 +10,7 @@ from datetime import datetime
 def nz_values(arr):
 # return an array containing all non-zero values in the source array
 	nztuples = np.nonzero(arr)
-	nzvalues = []
-	for i in nztuples[0]:
-		nzvalues.append(arr[i])
-	return nzvalues
+	return [arr[i] for i in nztuples[0]]
 
 def get_client_id():
 	cmd = "sum /etc/machine-id | cut -f 1 -d ' '"
@@ -34,6 +31,5 @@ def fractional_hour(timestamp):
 	dt = datetime.fromtimestamp(timestamp)
 	dt_12am = datetime.combine(dt,datetime.min.time())
 	tdelta = dt - dt_12am
-	hour_frac = round(float(tdelta.seconds)/SECONDS_PER_HOUR,3)
-	return hour_frac
+	return round(float(tdelta.seconds)/SECONDS_PER_HOUR,3)
 

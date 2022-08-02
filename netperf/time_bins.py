@@ -15,11 +15,7 @@ class bin:
 		self.values.append(value)
 
 	def mean(self):
-		if len(self.values) > 0:
-			m = sum(self.values) / len(self.values)
-		else:
-			m = 0
-		return m
+		return sum(self.values) / len(self.values) if len(self.values) > 0 else 0
 
 class time_bins:
 
@@ -39,14 +35,8 @@ class time_bins:
 		self.bins[b].add_value(value)
 
 	def get_times(self):
-		times = []
-		for b in self.bins:
-			times.append(b.time)
-		return times
+		return [b.time for b in self.bins]
 
 	def get_means(self):
-		means = []
-		for b in self.bins:
-			means.append(b.mean())
-		return means
+		return [b.mean() for b in self.bins]
 

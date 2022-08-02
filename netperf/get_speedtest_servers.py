@@ -11,12 +11,13 @@ SERVERLIST_URL="https://www.speedtest.net/speedtest-servers-static.php"
 OUTPUT_FIELD_SEPARATOR="||"
 
 ua_info = (
-        'Mozilla/5.0',
-        '(%s; U; %s; en-us)' % (platform.system(), platform.architecture()[0]),
-        'Python/%s' % platform.python_version(),
-        '(KHTML, like Gecko)',
-        'netperf/1.0'
+	'Mozilla/5.0',
+	f'({platform.system()}; U; {platform.architecture()[0]}; en-us)',
+	f'Python/{platform.python_version()}',
+	'(KHTML, like Gecko)',
+	'netperf/1.0',
 )
+
 
 USER_AGENT = ' '.join(ua_info)
 
